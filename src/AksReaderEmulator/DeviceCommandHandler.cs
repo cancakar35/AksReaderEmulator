@@ -2,13 +2,13 @@ using System.Globalization;
 
 namespace AksReaderEmulator
 {
-    public class DeviceCommandHandler
+    public class DeviceCommandHandler(byte readerId)
     {
         public byte[] CreateCommand(ReadOnlySpan<byte> data)
         {
             byte[] commandBytes = new byte[7 + data.Length];
             commandBytes[0] = (byte)2;
-            commandBytes[1] = 150;
+            commandBytes[1] = readerId;
             commandBytes[2] = 255;
             commandBytes[3] = (byte)(data.Length + 3);
             data.CopyTo(commandBytes.AsSpan(4));

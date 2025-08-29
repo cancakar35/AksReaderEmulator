@@ -1,25 +1,52 @@
+// Licensed under the MIT License.
+// https://opensource.org/license/MIT
+
 using AksReaderEmulator;
+using Microsoft.Extensions.Configuration;
 using System.Buffers;
 using System.Globalization;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
 
+Console.Title = "AKS Reader Emulator";
+Console.WriteLine("© 2025 Can Çakar - Licensed under the MIT License. (https://github.com/cancakar35/AksReaderEmulator)");
+Console.WriteLine();
 
-var deviceCommandHandler = new DeviceCommandHandler();
-using var server = new TcpListener(IPAddress.Parse("127.0.0.1"), 1001);
+IConfiguration configuration = new ConfigurationBuilder()
+    .AddUserSecrets<Program>()
+    .AddCommandLine(args)
+    .AddEnvironmentVariables(prefix: "AKSREADER_")
+    .Build();
 
-server.Start();
+IPAddress deviceIp = configuration["ip"] is not null ? IPAddress.Parse(configuration["ip"]!) : IPAddress.Any;
+int devicePort = Convert.ToInt32(configuration["port"] ?? "1001");
+byte readerId = Convert.ToByte(configuration["readerId"] ?? "150");
 
-List<DevicePerson> devicePersons = [];
-List<DeviceAttendance> deviceAttendances = [];
-int lastReadAttendanceRecord = 0;
+ArgumentOutOfRangeException.ThrowIfNegative(devicePort);
+ArgumentOutOfRangeException.ThrowIfGreaterThan(devicePort, 65535);
+
+
+var deviceCommandHandler = new DeviceCommandHandler(readerId);
 
 byte[] okCommand = deviceCommandHandler.CreateCommand(Encoding.UTF8.GetBytes("o"));
 byte[] errCommand = deviceCommandHandler.CreateCommand(Encoding.UTF8.GetBytes("h"));
 byte[] paramErrorResp = deviceCommandHandler.CreateCommand(Encoding.UTF8.GetBytes("n"));
 byte[] emptyCardResponse = deviceCommandHandler.CreateCommand(Encoding.UTF8.GetBytes("a00"));
 byte[] filledCardResponse = deviceCommandHandler.CreateCommand(Encoding.UTF8.GetBytes("b00D32EF4CF"));
+
+using var server = new TcpListener(deviceIp, devicePort);
+
+server.Start();
+
+Console.WriteLine($"Listening on {deviceIp}:{devicePort} with ReaderId={readerId}");
+Console.Title = $"AKS Reader Emulator - {deviceIp}:{devicePort} (ReaderId={readerId})";
+
+List<DevicePerson> devicePersons = [];
+List<DeviceAttendance> deviceAttendances = [];
+int lastReadAttendanceRecord = 0;
+int deviceWorkType = 0; // (1 : online, 2 : offline, 3 : OnOff)
+int deviceProtocol = 0; // (0: Client, 1: Server)
 
 while (true)
 {
@@ -28,6 +55,8 @@ while (true)
     try
     {
         using TcpClient client = server.AcceptTcpClient();
+
+        Console.WriteLine($"Connection with client {(client.Client.RemoteEndPoint as IPEndPoint)?.Address}");
 
         NetworkStream stream = client.GetStream();
 
@@ -52,6 +81,11 @@ while (true)
                 //{
                 //    d00 log response here
                 //}
+                if (deviceWorkType == 2)
+                {
+                    stream.Write(emptyCardResponse);
+                    continue;
+                }
                 if (Random.Shared.Next(0, 100) > 50)
                     stream.Write(emptyCardResponse);
                 else
@@ -102,10 +136,13 @@ while (true)
             }
             else if (commandId == 24)
             {
-                if (commandParams == "1" || commandParams == "2" || commandParams == "3")
-                    stream.Write(okCommand);
-                else
+                if (commandParams != "1" && commandParams != "2" && commandParams != "3")
+                {
                     stream.Write(errCommand);
+                    continue;
+                }
+                deviceWorkType = Convert.ToInt32(commandParams);
+                stream.Write(okCommand);
             }
             else if (commandId == 31)
             {
@@ -128,6 +165,22 @@ while (true)
             else if (commandId == 33)
             {
                 devicePersons.RemoveAll(p => p.CardId == commandParams);
+                stream.Write(okCommand);
+            }
+            else if (commandId == 52 || commandId == 54 || commandId == 55 || commandId == 56
+                || commandId == 58 || commandId == 59 || commandId == 62 || commandId == 63
+                || commandId == 70 || commandId == 71)
+            {
+                throw new NotImplementedException("Mifare card operations not supported yet. Use a real device.");
+            }
+            else if (commandId == 101)
+            {
+                if (commandParams != "1" && commandParams != "0")
+                {
+                    stream.Write(errCommand);
+                    continue;
+                }
+                deviceProtocol = Convert.ToInt32(commandParams);
                 stream.Write(okCommand);
             }
             else if (commandId == 248)
@@ -159,7 +212,9 @@ while (true)
     }
     catch (Exception ex)
     {
+        Console.ForegroundColor = ConsoleColor.DarkRed;
         Console.WriteLine(ex.Message);
+        Console.ResetColor();
     }
     finally
     {
