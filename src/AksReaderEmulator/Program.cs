@@ -188,7 +188,14 @@ while (true)
                 devicePersons.RemoveAll(p => p.CardId == commandParams);
                 stream.Write(okCommand);
             }
-            else if (commandId == 52 || commandId == 54 || commandId == 55 || commandId == 56
+            else if (commandId == 52)
+            {
+                Console.ForegroundColor = ConsoleColor.DarkYellow;
+                Console.WriteLine("Mifare card operations not supported. Use a real device. (Will return a00 for compability)");
+                Console.ResetColor();
+                stream.Write(emptyCardResponse);
+            }
+            else if (commandId == 54 || commandId == 55 || commandId == 56
                 || commandId == 58 || commandId == 59 || commandId == 62 || commandId == 63
                 || commandId == 70 || commandId == 71)
             {
