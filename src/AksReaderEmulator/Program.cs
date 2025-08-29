@@ -48,11 +48,11 @@ if (deviceProtocol != 0 && deviceProtocol != 1)
 
 var deviceCommandHandler = new DeviceCommandHandler(readerId);
 
-byte[] okCommand = deviceCommandHandler.CreateCommand(Encoding.UTF8.GetBytes("o"));
-byte[] errCommand = deviceCommandHandler.CreateCommand(Encoding.UTF8.GetBytes("h"));
-byte[] paramErrorResp = deviceCommandHandler.CreateCommand(Encoding.UTF8.GetBytes("n"));
-byte[] emptyCardResponse = deviceCommandHandler.CreateCommand(Encoding.UTF8.GetBytes("a00"));
-byte[] filledCardResponse = deviceCommandHandler.CreateCommand(Encoding.UTF8.GetBytes("b00D32EF4CF"));
+byte[] okCommand = deviceCommandHandler.CreateCommand("o"u8);
+byte[] errCommand = deviceCommandHandler.CreateCommand("h"u8);
+byte[] paramErrorResp = deviceCommandHandler.CreateCommand("n"u8);
+byte[] emptyCardResponse = deviceCommandHandler.CreateCommand("a00"u8);
+byte[] filledCardResponse = deviceCommandHandler.CreateCommand("b00D32EF4CF"u8);
 
 using var server = new TcpListener(deviceIp, devicePort);
 
@@ -82,7 +82,7 @@ while (true)
 
         while ((i = stream.Read(buffer)) != 0)
         {
-            byte[]? dataPart = deviceCommandHandler.GetDataPart(buffer.ToArray());
+            byte[]? dataPart = deviceCommandHandler.GetDataPart(buffer);
             if (dataPart == null) continue;
 
             int commandId = dataPart[0];
