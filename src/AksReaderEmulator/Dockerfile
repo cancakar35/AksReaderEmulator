@@ -10,10 +10,10 @@ WORKDIR /app
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["src/AksReaderEmulator/AksReaderEmulator.csproj", "src/AksReaderEmulator/"]
-RUN dotnet restore "./src/AksReaderEmulator/AksReaderEmulator.csproj"
+COPY ["AksReaderEmulator.csproj", "."]
+RUN dotnet restore "./AksReaderEmulator.csproj"
 COPY . .
-WORKDIR "/src/src/AksReaderEmulator"
+WORKDIR "/src"
 RUN dotnet build "./AksReaderEmulator.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 # This stage is used to publish the service project to be copied to the final stage
