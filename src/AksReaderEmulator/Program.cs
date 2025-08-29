@@ -27,6 +27,7 @@ ArgumentOutOfRangeException.ThrowIfGreaterThan(devicePort, 65535);
 
 byte readerId = Convert.ToByte(configuration["readerId"] ?? "150");
 bool withRandomCardReads = configuration["randomCardReads"] == "true";
+bool withRequestCommandLogging = configuration["logRequests"] == "true";
 int deviceWorkType = Convert.ToInt32(configuration["workType"] ?? "3"); // (1 : online, 2 : offline, 3 : OnOff)
 int deviceProtocol = Convert.ToInt32(configuration["protocol"] ?? "0"); // (0: Client, 1: Server)
 
@@ -86,6 +87,9 @@ while (true)
 
             int commandId = dataPart[0];
             string commandParams = Encoding.UTF8.GetString(dataPart[1..]);
+
+            if (withRequestCommandLogging)
+                Console.WriteLine($"{commandId} {commandParams}");
 
             if (commandId == 10)
             {
@@ -153,7 +157,7 @@ while (true)
                 DateTime newDeviceDateTime = DateTime.Now;
                 int dayOfWeek = newDeviceDateTime.DayOfWeek == DayOfWeek.Sunday ? 7 : (int)newDeviceDateTime.DayOfWeek;
                 byte[] getDateResponse = Encoding.UTF8.GetBytes($"c{newDeviceDateTime:HHmmss}0{dayOfWeek}{newDeviceDateTime:ddMMyy}");
-                stream.Write(getDateResponse);
+                stream.Write(deviceCommandHandler.CreateCommand(getDateResponse));
             }
             else if (commandId == 24)
             {
