@@ -6,7 +6,10 @@
       "environmentVariables": {
         "AKSREADER_ip": "127.0.0.1",
         "AKSREADER_port": "1001",
-        "AKSREADER_readerId": "150"
+        "AKSREADER_readerId": "150",
+        "AKSREADER_randomCardReads": "true",
+        "AKSREADER_workType": "3",
+        "AKSREADER_protocol": "0"
       }
     }
   }

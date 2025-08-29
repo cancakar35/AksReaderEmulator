@@ -21,11 +21,29 @@ IConfiguration configuration = new ConfigurationBuilder()
 
 IPAddress deviceIp = configuration["ip"] is not null ? IPAddress.Parse(configuration["ip"]!) : IPAddress.Any;
 int devicePort = Convert.ToInt32(configuration["port"] ?? "1001");
-byte readerId = Convert.ToByte(configuration["readerId"] ?? "150");
 
 ArgumentOutOfRangeException.ThrowIfNegative(devicePort);
 ArgumentOutOfRangeException.ThrowIfGreaterThan(devicePort, 65535);
 
+byte readerId = Convert.ToByte(configuration["readerId"] ?? "150");
+bool withRandomCardReads = configuration["randomCardReads"] == "true";
+int deviceWorkType = Convert.ToInt32(configuration["workType"] ?? "3"); // (1 : online, 2 : offline, 3 : OnOff)
+int deviceProtocol = Convert.ToInt32(configuration["protocol"] ?? "0"); // (0: Client, 1: Server)
+
+if (deviceWorkType != 1 && deviceWorkType != 2 && deviceWorkType != 3)
+{
+    Console.ForegroundColor = ConsoleColor.DarkYellow;
+    Console.WriteLine($"Incorrect work type: {deviceWorkType}. Allowed values: 1,2,3. Program will continue with 3 (OnOff mode)");
+    deviceWorkType = 3;
+    Console.ResetColor();
+}
+if (deviceProtocol != 0 && deviceProtocol != 1)
+{
+    Console.ForegroundColor = ConsoleColor.DarkYellow;
+    Console.WriteLine($"Incorrect protocol: {deviceProtocol}. Allowed values: 0,1. Program will continue with 0 (Client mode)");
+    deviceProtocol = 0;
+    Console.ResetColor();
+}
 
 var deviceCommandHandler = new DeviceCommandHandler(readerId);
 
@@ -45,8 +63,7 @@ Console.Title = $"AKS Reader Emulator - {deviceIp}:{devicePort} (ReaderId={reade
 List<DevicePerson> devicePersons = [];
 List<DeviceAttendance> deviceAttendances = [];
 int lastReadAttendanceRecord = 0;
-int deviceWorkType = 0; // (1 : online, 2 : offline, 3 : OnOff)
-int deviceProtocol = 0; // (0: Client, 1: Server)
+
 
 while (true)
 {
@@ -86,10 +103,14 @@ while (true)
                     stream.Write(emptyCardResponse);
                     continue;
                 }
-                if (Random.Shared.Next(0, 100) > 50)
-                    stream.Write(emptyCardResponse);
+                if (withRandomCardReads)
+                {
+                    stream.Write((Random.Shared.Next(0, 100) > 50) ? filledCardResponse : emptyCardResponse);
+                }
                 else
-                    stream.Write(filledCardResponse);
+                {
+                    stream.Write(emptyCardResponse);
+                }
             }
             else if (commandId == 17)
             {
