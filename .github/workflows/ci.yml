@@ -60,22 +60,28 @@ jobs:
   release:
     needs: [build-linux, build-windows, build-mac]
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
     steps:
     - uses: actions/checkout@v4
 
     - name: Read VersionPrefix
+      id: read_version
       shell: pwsh
       run: |
         $dbp = [Xml] (Get-Content .\Directory.Build.props)
         $versionPrefix = $dbp.Project.PropertyGroup.VersionPrefix
-        echo "Version: $versionPrefix"
+        echo "VERSION_PREFIX=$versionPrefix" >> "$GITHUB_OUTPUT"
   
     - uses: actions/download-artifact@v5
       with:
         path: ./artifacts
 
-    - name: List artifacts
-      run: |
-        ls -1 ./artifacts
-    
+    - name: Github Release
+      env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION_PREFIX: ${{ steps.read_version.outputs.VERSION_PREFIX }}
+      run: gh release create v${{ env.VERSION_PREFIX }} --title v${{ env.VERSION_PREFIX }} --generate-notes ./artifacts/**/*
     
