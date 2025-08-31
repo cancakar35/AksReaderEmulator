@@ -1,0 +1,71 @@
+name: Release
+
+on:
+  push:
+    branches: [ "master" ]
+
+jobs:
+  build-linux:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 9.0.x
+    - name: Publish
+      run: dotnet publish .\src\AksReaderEmulator\AksReaderEmulator.csproj -c Release -r linux-x64 --sc -p:PublishAot=false -p:PublishSingleFile=true -p:PublishTrimmed=true -p:DebugType=none
+    - uses: actions/upload-artifact@v4
+      with:
+        name: linux-x64
+        path: ./publish/linux-x64
+
+  build-windows:
+
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 9.0.x
+    - name: Publish
+      run: dotnet publish .\src\AksReaderEmulator\AksReaderEmulator.csproj -c Release -r win-x64 --sc -p:PublishAot=false -p:PublishSingleFile=true -p:PublishTrimmed=true -p:DebugType=none
+    - uses: actions/upload-artifact@v4
+      with:
+        name: win-x64
+        path: ./publish/win-x64
+
+  build-mac:
+
+    runs-on: macos-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 9.0.x
+    - name: Publish
+      run: dotnet publish .\src\AksReaderEmulator\AksReaderEmulator.csproj -c Release -r osx-arm64 --sc -p:PublishAot=false -p:PublishSingleFile=true -p:PublishTrimmed=true -p:DebugType=none
+    - uses: actions/upload-artifact@v4
+      with:
+        name: osx-arm64
+        path: ./publish/osx-arm64
+
+
+  release:
+    needs: [build-linux, build-windows, build-mac]
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/download-artifact@v5
+      with:
+        path: ./artifacts
+
+    - name: List artifacts
+      run: |
+        ls -1 ./artifacts
+    
