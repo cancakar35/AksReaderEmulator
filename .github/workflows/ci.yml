@@ -89,6 +89,4 @@ jobs:
       run: |
         gh release create v${{ env.VERSION_PREFIX }} --title v${{ env.VERSION_PREFIX }} --generate-notes \
         "./artifacts/win-x64/AksReaderEmulator.exe#AksReaderEmulator-v${{ env.VERSION_PREFIX }}-win-x64.exe" \
-        "./artifacts/linux-x64/AksReaderEmulator#AksReaderEmulator-v${{ env.VERSION_PREFIX }}-linux-x64" \
-        "./artifacts/osx-arm64/AksReaderEmulator#AksReaderEmulator-v${{ env.VERSION_PREFIX }}-macos-arm64"
 
