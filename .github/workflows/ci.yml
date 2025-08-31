@@ -79,6 +79,9 @@ jobs:
       with:
         path: ./artifacts
 
+    - name: List downloaded files
+      run: find ./artifacts -type f
+
     - name: Github Release
       env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
