@@ -73,7 +73,7 @@ jobs:
       run: |
         $dbp = [Xml] (Get-Content .\Directory.Build.props)
         $versionPrefix = $dbp.Project.PropertyGroup.VersionPrefix
-        echo "VERSION_PREFIX=$versionPrefix" >> "$GITHUB_OUTPUT"
+        echo "VERSION_PREFIX=$versionPrefix" >> "$env:GITHUB_OUTPUT"
   
     - uses: actions/download-artifact@v5
       with:
