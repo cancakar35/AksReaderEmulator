@@ -88,6 +88,8 @@ while (true)
             int commandId = dataPart[0];
             string commandParams = Encoding.UTF8.GetString(dataPart[1..]);
 
+            Array.Clear(buffer);
+
             if (withRequestCommandLogging)
                 Console.WriteLine($"{commandId} {commandParams}");
 
