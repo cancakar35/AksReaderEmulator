@@ -16,7 +16,7 @@ jobs:
       with:
         dotnet-version: 9.0.x
     - name: Publish
-      run: dotnet publish ./src/AksReaderEmulator/AksReaderEmulator.csproj -c Release -r linux-x64 -o ./artifacts/linux-x64 --sc -p:PublishAot=false -p:PublishSingleFile=true -p:PublishTrimmed=true -p:DebugType=none
+      run: dotnet publish ./src/AksReaderEmulator/AksReaderEmulator.csproj -c Release -r linux-x64 -o ./artifacts/linux-x64 --sc -p:PublishAot=false -p:PublishSingleFile=true -p:PublishTrimmed=true -p:DebugType=none -p:ContinuousIntegrationBuild=true
     - uses: actions/upload-artifact@v4
       with:
         name: linux-x64
@@ -33,7 +33,7 @@ jobs:
       with:
         dotnet-version: 9.0.x
     - name: Publish
-      run: dotnet publish ./src/AksReaderEmulator/AksReaderEmulator.csproj -c Release -r win-x64 -o ./artifacts/win-x64 --sc -p:PublishAot=false -p:PublishSingleFile=true -p:PublishTrimmed=true -p:DebugType=none
+      run: dotnet publish ./src/AksReaderEmulator/AksReaderEmulator.csproj -c Release -r win-x64 -o ./artifacts/win-x64 --sc -p:PublishAot=false -p:PublishSingleFile=true -p:PublishTrimmed=true -p:DebugType=none -p:ContinuousIntegrationBuild=true
     - uses: actions/upload-artifact@v4
       with:
         name: win-x64
@@ -50,7 +50,7 @@ jobs:
       with:
         dotnet-version: 9.0.x
     - name: Publish
-      run: dotnet publish ./src/AksReaderEmulator/AksReaderEmulator.csproj -c Release -r osx-arm64 -o ./artifacts/osx-arm64 --sc -p:PublishAot=false -p:PublishSingleFile=true -p:PublishTrimmed=true -p:DebugType=none
+      run: dotnet publish ./src/AksReaderEmulator/AksReaderEmulator.csproj -c Release -r osx-arm64 -o ./artifacts/osx-arm64 --sc -p:PublishAot=false -p:PublishSingleFile=true -p:PublishTrimmed=true -p:DebugType=none -p:ContinuousIntegrationBuild=true
     - uses: actions/upload-artifact@v4
       with:
         name: osx-arm64
