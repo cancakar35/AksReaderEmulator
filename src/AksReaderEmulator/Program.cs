@@ -13,6 +13,21 @@ Console.Title = "AKS Reader Emulator";
 Console.WriteLine("© 2025 Can Çakar - Licensed under the MIT License. (https://github.com/cancakar35/AksReaderEmulator)");
 Console.WriteLine();
 
+if (args.Contains("--help", StringComparer.OrdinalIgnoreCase)) { 
+    Console.WriteLine("Usage: AksReaderEmulator [options]");
+    Console.WriteLine();
+    Console.WriteLine("Options:");
+    Console.WriteLine("  --ip <ip_address>              IP address to listen (default: 0.0.0.0)");
+    Console.WriteLine("  --port <port_number>           TCP port number to listen (default: 1001)");
+    Console.WriteLine("  --readerId <id>                Reader ID (default: 150)");
+    Console.WriteLine("  --randomCardReads <true|false> Enable random card reads (default: false)");
+    Console.WriteLine("  --logRequests <true|false>     Enable logging of incoming requests (default: false)");
+    Console.WriteLine("  --workType <1|2|3>             Device work type: 1 (online), 2 (offline), 3 (OnOff) (default: 3)");
+    Console.WriteLine("  --protocol <0|1>               Device protocol: 0 (Client), 1 (Server) (default: 0)");
+    Console.WriteLine();
+    return;
+}
+
 IConfiguration configuration = new ConfigurationBuilder()
     .AddUserSecrets<Program>()
     .AddCommandLine(args)
