@@ -29,7 +29,6 @@ if (args.Contains("--help", StringComparer.OrdinalIgnoreCase)) {
 }
 
 IConfiguration configuration = new ConfigurationBuilder()
-    .AddUserSecrets<Program>()
     .AddCommandLine(args)
     .AddEnvironmentVariables(prefix: "AKSREADER_")
     .Build();
