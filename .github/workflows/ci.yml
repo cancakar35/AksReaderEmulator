@@ -15,8 +15,11 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 9.0.x
+    - name: Install Necessary tools for Aot
+      run: sudo apt-get install clang zlib1g-dev
+      
     - name: Publish
-      run: dotnet publish ./src/AksReaderEmulator/AksReaderEmulator.csproj -c Release -r linux-x64 -o ./artifacts/linux-x64 --sc -p:PublishAot=false -p:PublishSingleFile=true -p:PublishTrimmed=true -p:DebugType=none -p:ContinuousIntegrationBuild=true
+      run: dotnet publish ./src/AksReaderEmulator/AksReaderEmulator.csproj -c Release -r linux-x64 -o ./artifacts/linux-x64 --sc -p:PublishAot=true -p:PublishSingleFile=true -p:DebugType=none -p:ContinuousIntegrationBuild=true
 
     - name: Zip Binary
       run: |
@@ -63,7 +66,7 @@ jobs:
       with:
         dotnet-version: 9.0.x
     - name: Publish
-      run: dotnet publish ./src/AksReaderEmulator/AksReaderEmulator.csproj -c Release -r osx-arm64 -o ./artifacts/osx-arm64 --sc -p:PublishAot=false -p:PublishSingleFile=true -p:PublishTrimmed=true -p:DebugType=none -p:ContinuousIntegrationBuild=true
+      run: dotnet publish ./src/AksReaderEmulator/AksReaderEmulator.csproj -c Release -r osx-arm64 -o ./artifacts/osx-arm64 --sc -p:PublishAot=true -p:PublishSingleFile=true -p:DebugType=none -p:ContinuousIntegrationBuild=true
 
     - name: Zip Binary
       run: |
