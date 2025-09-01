@@ -106,7 +106,7 @@ jobs:
           VERSION_PREFIX: ${{ steps.read_version.outputs.VERSION_PREFIX }}
       run: |
         gh release create v${{ env.VERSION_PREFIX }} --title v${{ env.VERSION_PREFIX }} --generate-notes \
-        "./artifacts/AksReaderEmulator-win-x64.zip" \
-        "./artifacts/AksReaderEmulator-linux-x64.zip" \
-        "./artifacts/AksReaderEmulator-osx-arm64.zip" \
+        "./artifacts/win-x64/AksReaderEmulator-win-x64.zip" \
+        "./artifacts/linux-x64/AksReaderEmulator-linux-x64.zip" \
+        "./artifacts/osx-arm64/AksReaderEmulator-osx-arm64.zip" \
 
