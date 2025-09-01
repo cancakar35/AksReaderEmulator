@@ -113,11 +113,20 @@ while (true)
             }
             else if (commandId == 11)
             {
-                // TODO: 
-                //if (deviceAttendances.Count > lastReadAttendanceRecord)
-                //{
-                //    d00 log response here
-                //}
+                if (deviceAttendances.Count > lastReadAttendanceRecord)
+                {
+                    DeviceAttendance offlineAttendance = deviceAttendances[lastReadAttendanceRecord];
+                    StringBuilder logRespBuilder = new("d00");
+                    logRespBuilder.Append(offlineAttendance.Date.ToString("HHmmss"));
+                    logRespBuilder.Append('0');
+                    logRespBuilder.Append((offlineAttendance.Date.DayOfWeek == DayOfWeek.Sunday ? 7 : (int)offlineAttendance.Date.DayOfWeek));
+                    logRespBuilder.Append(offlineAttendance.Date.ToString("ddMMyy"));
+                    logRespBuilder.Append(offlineAttendance.CardId);
+                    logRespBuilder.Append("0101000001");
+                    byte[] logResp = deviceCommandHandler.CreateCommand(Encoding.UTF8.GetBytes(logRespBuilder.ToString()));
+                    stream.Write(logResp);
+                    continue;
+                }
                 if (deviceWorkType == 2)
                 {
                     stream.Write(emptyCardResponse);
