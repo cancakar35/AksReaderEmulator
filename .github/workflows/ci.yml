@@ -42,7 +42,7 @@ jobs:
       with:
         dotnet-version: 9.0.x
     - name: Publish
-      run: dotnet publish ./src/AksReaderEmulator/AksReaderEmulator.csproj -c Release -r win-x64 -o ./artifacts/win-x64 --sc -p:PublishAot=false -p:PublishSingleFile=true -p:PublishTrimmed=true -p:DebugType=none -p:ContinuousIntegrationBuild=true
+      run: dotnet publish ./src/AksReaderEmulator/AksReaderEmulator.csproj -c Release -r win-x64 -o ./artifacts/win-x64 --sc -p:PublishAot=true -p:PublishSingleFile=true -p:DebugType=none -p:ContinuousIntegrationBuild=true
 
     - name: Zip Binary
       shell: pwsh
