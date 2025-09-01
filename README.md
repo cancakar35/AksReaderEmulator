@@ -12,6 +12,9 @@ Simulate AKS Elektronik mifare and proximity access control devices (ACS-403, AC
 ```
 
 ### Arguments
+- `--help`
+  Displays help text.
+  
 - `--ip`
   Sets the ip address to listen. The default is all network interfaces (0.0.0.0)
   
@@ -30,7 +33,7 @@ Simulate AKS Elektronik mifare and proximity access control devices (ACS-403, AC
 - `--workType`
   Sets the device work type (online,offline,onoff). Default is on_off.
 
-- `--workType`
+- `--protocol`
   Sets the device protocol (server,client). Default is client.
 
 <br />
