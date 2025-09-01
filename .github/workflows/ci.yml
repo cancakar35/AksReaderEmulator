@@ -17,10 +17,16 @@ jobs:
         dotnet-version: 9.0.x
     - name: Publish
       run: dotnet publish ./src/AksReaderEmulator/AksReaderEmulator.csproj -c Release -r linux-x64 -o ./artifacts/linux-x64 --sc -p:PublishAot=false -p:PublishSingleFile=true -p:PublishTrimmed=true -p:DebugType=none -p:ContinuousIntegrationBuild=true
+
+    - name: Zip Binary
+      run: |
+        zip ./artifacts/AksReaderEmulator-linux-x64.zip ./artifacts/linux-x64/AksReaderEmulator
+
     - uses: actions/upload-artifact@v4
       with:
         name: linux-x64
-        path: ./artifacts/linux-x64
+        path: ./artifacts/AksReaderEmulator-linux-x64.zip
+        if-no-files-found: error
 
   build-windows:
 
@@ -34,10 +40,16 @@ jobs:
         dotnet-version: 9.0.x
     - name: Publish
       run: dotnet publish ./src/AksReaderEmulator/AksReaderEmulator.csproj -c Release -r win-x64 -o ./artifacts/win-x64 --sc -p:PublishAot=false -p:PublishSingleFile=true -p:PublishTrimmed=true -p:DebugType=none -p:ContinuousIntegrationBuild=true
+
+    - name: Zip Binary
+      run: |
+        zip ./artifacts/AksReaderEmulator-win-x64.zip ./artifacts/win-x64/AksReaderEmulator.exe
+
     - uses: actions/upload-artifact@v4
       with:
         name: win-x64
-        path: ./artifacts/win-x64
+        path: ./artifacts/AksReaderEmulator-win-x64.zip
+        if-no-files-found: error
 
   build-mac:
 
@@ -51,11 +63,16 @@ jobs:
         dotnet-version: 9.0.x
     - name: Publish
       run: dotnet publish ./src/AksReaderEmulator/AksReaderEmulator.csproj -c Release -r osx-arm64 -o ./artifacts/osx-arm64 --sc -p:PublishAot=false -p:PublishSingleFile=true -p:PublishTrimmed=true -p:DebugType=none -p:ContinuousIntegrationBuild=true
+
+    - name: Zip Binary
+      run: |
+        zip ./artifacts/AksReaderEmulator-osx-arm64.zip ./artifacts/osx-arm64/AksReaderEmulator
+
     - uses: actions/upload-artifact@v4
       with:
         name: osx-arm64
-        path: ./artifacts/osx-arm64
-
+        path: ./artifacts/AksReaderEmulator-osx-arm64.zip
+        if-no-files-found: error
 
   release:
     needs: [build-linux, build-windows, build-mac]
@@ -75,7 +92,7 @@ jobs:
         $versionPrefix = $dbp.Project.PropertyGroup.VersionPrefix
         echo "VERSION_PREFIX=$versionPrefix" >> "$env:GITHUB_OUTPUT"
   
-    - uses: actions/download-artifact@v4
+    - uses: actions/download-artifact@v5
       with:
         path: ./artifacts
 
@@ -88,7 +105,7 @@ jobs:
           VERSION_PREFIX: ${{ steps.read_version.outputs.VERSION_PREFIX }}
       run: |
         gh release create v${{ env.VERSION_PREFIX }} --title v${{ env.VERSION_PREFIX }} --generate-notes \
-        "./artifacts/win-x64/AksReaderEmulator.exe#AksReaderEmulator-v${{ env.VERSION_PREFIX }}-win-x64.exe" \
-        "./artifacts/linux-x64/AksReaderEmulator#AksReaderEmulator-v${{ env.VERSION_PREFIX }}-linux-x64" \
-        "./artifacts/osx-arm64/AksReaderEmulator#AksReaderEmulator-v${{ env.VERSION_PREFIX }}-macos-arm64" \
+        "./artifacts/AksReaderEmulator-win-x64.zip" \
+        "./artifacts/AksReaderEmulator-linux-x64.zip" \
+        "./artifacts/AksReaderEmulator-osx-arm64.zip" \
 
