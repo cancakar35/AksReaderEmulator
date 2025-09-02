@@ -5,6 +5,7 @@ using AksReaderEmulator;
 using Microsoft.Extensions.Configuration;
 using System.Buffers;
 using System.Globalization;
+using System.IO.Pipelines;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -82,197 +83,205 @@ int lastReadAttendanceRecord = 0;
 
 while (true)
 {
-    byte[] buffer = ArrayPool<byte>.Shared.Rent(1024);
-
     try
     {
-        using TcpClient client = server.AcceptTcpClient();
+        using TcpClient client = await server.AcceptTcpClientAsync();
 
         Console.WriteLine($"Connection with client {(client.Client.RemoteEndPoint as IPEndPoint)?.Address}");
 
         NetworkStream stream = client.GetStream();
+        var pipeReader = PipeReader.Create(stream);
+        var pipeWriter = PipeWriter.Create(stream);
 
-        int i;
-        int readPosition = 0;
-
-        while ((i = stream.Read(buffer, readPosition, buffer.Length-readPosition)) != 0)
+        while (true)
         {
-            readPosition += i;
-            byte[]? dataPart = deviceCommandHandler.GetDataPart(buffer);
-            if (dataPart == null) continue;
+            ReadResult result = await pipeReader.ReadAsync();
+            ReadOnlySequence<byte> pipeBuffer = result.Buffer;
 
-            int commandId = dataPart[0];
-            string commandParams = Encoding.UTF8.GetString(dataPart[1..]);
 
-            Array.Clear(buffer);
-            readPosition = 0;
-
-            if (withRequestCommandLogging)
-                Console.WriteLine($"{commandId} {commandParams}");
-
-            if (commandId == 10)
+            while (TryReadCommand(ref pipeBuffer, out byte[]? command))
             {
-                stream.Write(okCommand);
-            }
-            else if (commandId == 11)
-            {
-                if (deviceAttendances.Count > lastReadAttendanceRecord)
+                byte[]? dataPart = deviceCommandHandler.GetDataPart(command);
+                if (dataPart == null) continue;
+
+                int commandId = dataPart[0];
+                string commandParams = Encoding.UTF8.GetString(dataPart[1..]);
+                if (withRequestCommandLogging)
+                    Console.WriteLine($"{commandId} {commandParams}");
+
+                if (commandId == 10)
                 {
-                    DeviceAttendance offlineAttendance = deviceAttendances[lastReadAttendanceRecord];
-                    StringBuilder logRespBuilder = new("d00");
-                    logRespBuilder.Append(offlineAttendance.Date.ToString("HHmmss"));
-                    logRespBuilder.Append('0');
-                    logRespBuilder.Append((offlineAttendance.Date.DayOfWeek == DayOfWeek.Sunday ? 7 : (int)offlineAttendance.Date.DayOfWeek));
-                    logRespBuilder.Append(offlineAttendance.Date.ToString("ddMMyy"));
-                    logRespBuilder.Append(offlineAttendance.CardId);
-                    logRespBuilder.Append("0101000001");
-                    byte[] logResp = deviceCommandHandler.CreateCommand(Encoding.UTF8.GetBytes(logRespBuilder.ToString()));
-                    stream.Write(logResp);
-                    continue;
+                    await pipeWriter.WriteAsync(okCommand);
                 }
-                if (deviceWorkType == 2)
+                else if (commandId == 11)
                 {
-                    stream.Write(emptyCardResponse);
-                    continue;
-                }
-                if (withRandomCardReads)
-                {
-                    stream.Write((Random.Shared.Next(0, 100) > 50) ? filledCardResponse : emptyCardResponse);
-                }
-                else
-                {
-                    stream.Write(emptyCardResponse);
-                }
-            }
-            else if (commandId == 17)
-            {
-                if (commandParams.StartsWith('+'))
-                {
-                    if (commandParams.Length > 14 && DateTime.TryParseExact(commandParams[1..15], "HHmmssddMMyyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime reqDate))
+                    if (deviceAttendances.Count > lastReadAttendanceRecord)
                     {
-                        Console.WriteLine($"{reqDate:HH:mm:ss dd.MM.yyyy} Geçiş Onaylandı - {commandParams[15..]}  (beep)");
+                        DeviceAttendance offlineAttendance = deviceAttendances[lastReadAttendanceRecord];
+                        StringBuilder logRespBuilder = new("d00");
+                        logRespBuilder.Append(offlineAttendance.Date.ToString("HHmmss"));
+                        logRespBuilder.Append('0');
+                        logRespBuilder.Append((offlineAttendance.Date.DayOfWeek == DayOfWeek.Sunday ? 7 : (int)offlineAttendance.Date.DayOfWeek));
+                        logRespBuilder.Append(offlineAttendance.Date.ToString("ddMMyy"));
+                        logRespBuilder.Append(offlineAttendance.CardId);
+                        logRespBuilder.Append("0101000001");
+                        byte[] logResp = deviceCommandHandler.CreateCommand(Encoding.UTF8.GetBytes(logRespBuilder.ToString()));
+                        await pipeWriter.WriteAsync(logResp);
+                        continue;
+                    }
+                    if (deviceWorkType == 2)
+                    {
+                        await pipeWriter.WriteAsync(emptyCardResponse);
+                        continue;
+                    }
+                    if (withRandomCardReads)
+                    {
+                        await pipeWriter.WriteAsync((Random.Shared.Next(0, 100) > 50) ? filledCardResponse : emptyCardResponse);
                     }
                     else
                     {
-                        Console.WriteLine("Geçiş Onaylandı (beep)");
+                        await pipeWriter.WriteAsync(emptyCardResponse);
                     }
-                    stream.Write(okCommand);
                 }
-                else if (commandParams.StartsWith('-'))
+                else if (commandId == 17)
                 {
-                    Console.WriteLine("(Yetkisiz) (beeeeep)");
-                    stream.Write(okCommand);
+                    if (commandParams.StartsWith('+'))
+                    {
+                        if (commandParams.Length > 14 && DateTime.TryParseExact(commandParams[1..15], "HHmmssddMMyyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime reqDate))
+                        {
+                            Console.WriteLine($"{reqDate:HH:mm:ss dd.MM.yyyy} Geçiş Onaylandı - {commandParams[15..]}  (beep)");
+                        }
+                        else
+                        {
+                            Console.WriteLine("Geçiş Onaylandı (beep)");
+                        }
+                        await pipeWriter.WriteAsync(okCommand);
+                    }
+                    else if (commandParams.StartsWith('-'))
+                    {
+                        Console.WriteLine("(Yetkisiz) (beeeeep)");
+                        await pipeWriter.WriteAsync(okCommand);
+                    }
+                    else
+                    {
+                        await pipeWriter.WriteAsync(paramErrorResp);
+                    }
                 }
-                else
+                else if (commandId == 21)
                 {
-                    stream.Write(paramErrorResp);
+                    if (DateTime.TryParseExact(commandParams.Remove(6, 2), "HHmmssddMMyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime reqDate)
+                        && (reqDate.DayOfWeek == DayOfWeek.Sunday ? 7 : (int)reqDate.DayOfWeek) == Convert.ToInt32(commandParams[7]))
+                    {
+                        await pipeWriter.WriteAsync(okCommand);
+                    }
+                    else
+                    {
+                        await pipeWriter.WriteAsync(errCommand);
+                    }
                 }
-            }
-            else if (commandId == 21)
-            {
-                if (DateTime.TryParseExact(commandParams.Remove(6, 2), "HHmmssddMMyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime reqDate)
-                    && (reqDate.DayOfWeek == DayOfWeek.Sunday ? 7 : (int)reqDate.DayOfWeek) == Convert.ToInt32(commandParams[7]))
+                else if (commandId == 22)
                 {
-                    stream.Write(okCommand);
+                    DateTime newDeviceDateTime = DateTime.Now;
+                    int dayOfWeek = newDeviceDateTime.DayOfWeek == DayOfWeek.Sunday ? 7 : (int)newDeviceDateTime.DayOfWeek;
+                    byte[] getDateResponse = Encoding.UTF8.GetBytes($"c{newDeviceDateTime:HHmmss}0{dayOfWeek}{newDeviceDateTime:ddMMyy}");
+                    await pipeWriter.WriteAsync(deviceCommandHandler.CreateCommand(getDateResponse));
                 }
-                else
+                else if (commandId == 24)
                 {
-                    stream.Write(errCommand);
+                    if (commandParams != "1" && commandParams != "2" && commandParams != "3")
+                    {
+                        await pipeWriter.WriteAsync(errCommand);
+                        continue;
+                    }
+                    deviceWorkType = Convert.ToInt32(commandParams);
+                    await pipeWriter.WriteAsync(okCommand);
                 }
-            }
-            else if (commandId == 22)
-            {
-                DateTime newDeviceDateTime = DateTime.Now;
-                int dayOfWeek = newDeviceDateTime.DayOfWeek == DayOfWeek.Sunday ? 7 : (int)newDeviceDateTime.DayOfWeek;
-                byte[] getDateResponse = Encoding.UTF8.GetBytes($"c{newDeviceDateTime:HHmmss}0{dayOfWeek}{newDeviceDateTime:ddMMyy}");
-                stream.Write(deviceCommandHandler.CreateCommand(getDateResponse));
-            }
-            else if (commandId == 24)
-            {
-                if (commandParams != "1" && commandParams != "2" && commandParams != "3")
+                else if (commandId == 31)
                 {
-                    stream.Write(errCommand);
+                    if (commandParams.Length < 16 || !DateTime.TryParseExact(commandParams[10..16], "ddMMyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime reqDate))
+                    {
+                        await pipeWriter.WriteAsync(errCommand);
+                        continue;
+                    }
+                    string cardIdPart = commandParams[..8];
+                    string tablePart = commandParams[8..10];
+                    string namePart = commandParams[16..];
+                    devicePersons.Add(new DevicePerson(cardIdPart, namePart, tablePart, reqDate));
+                    await pipeWriter.WriteAsync(okCommand);
+                }
+                else if (commandId == 32)
+                {
+                    devicePersons.Clear();
+                    await pipeWriter.WriteAsync(okCommand);
+                }
+                else if (commandId == 33)
+                {
+                    devicePersons.RemoveAll(p => p.CardId == commandParams);
+                    await pipeWriter.WriteAsync(okCommand);
+                }
+                else if (commandId == 52)
+                {
+                    Console.ForegroundColor = ConsoleColor.DarkYellow;
+                    Console.WriteLine("Mifare card operations not supported. Use a real device. (Will return a00 for compatibility)");
+                    Console.ResetColor();
+                    await pipeWriter.WriteAsync(emptyCardResponse);
+                }
+                else if (commandId == 54 || commandId == 55 || commandId == 56
+                    || commandId == 58 || commandId == 59 || commandId == 62 || commandId == 63
+                    || commandId == 70 || commandId == 71)
+                {
+                    Console.ForegroundColor = ConsoleColor.DarkRed;
+                    Console.WriteLine("Mifare card operations not supported yet. Use a real device.");
+                    Console.ResetColor();
+                    await pipeWriter.WriteAsync(errCommand);
                     continue;
                 }
-                deviceWorkType = Convert.ToInt32(commandParams);
-                stream.Write(okCommand);
-            }
-            else if (commandId == 31)
-            {
-                if (commandParams.Length < 16 || !DateTime.TryParseExact(commandParams[10..16], "ddMMyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime reqDate))
+                else if (commandId == 101)
                 {
-                    stream.Write(errCommand);
-                    continue;
+                    if (commandParams != "1" && commandParams != "0")
+                    {
+                        await pipeWriter.WriteAsync(errCommand);
+                        continue;
+                    }
+                    deviceProtocol = Convert.ToInt32(commandParams);
+                    await pipeWriter.WriteAsync(okCommand);
                 }
-                string cardIdPart = commandParams[..8];
-                string tablePart = commandParams[8..10];
-                string namePart = commandParams[16..];
-                devicePersons.Add(new DevicePerson(cardIdPart, namePart, tablePart, reqDate));
-                stream.Write(okCommand);
-            }
-            else if (commandId == 32)
-            {
-                devicePersons.Clear();
-                stream.Write(okCommand);
-            }
-            else if (commandId == 33)
-            {
-                devicePersons.RemoveAll(p => p.CardId == commandParams);
-                stream.Write(okCommand);
-            }
-            else if (commandId == 52)
-            {
-                Console.ForegroundColor = ConsoleColor.DarkYellow;
-                Console.WriteLine("Mifare card operations not supported. Use a real device. (Will return a00 for compatibility)");
-                Console.ResetColor();
-                stream.Write(emptyCardResponse);
-            }
-            else if (commandId == 54 || commandId == 55 || commandId == 56
-                || commandId == 58 || commandId == 59 || commandId == 62 || commandId == 63
-                || commandId == 70 || commandId == 71)
-            {
-                Console.ForegroundColor = ConsoleColor.DarkRed;
-                Console.WriteLine("Mifare card operations not supported yet. Use a real device.");
-                Console.ResetColor();
-                stream.Write(errCommand);
-                continue;
-            }
-            else if (commandId == 101)
-            {
-                if (commandParams != "1" && commandParams != "0")
+                else if (commandId == 248)
                 {
-                    stream.Write(errCommand);
-                    continue;
+                    // personcount
+                    byte[] respBytes = deviceCommandHandler.CreateCommand(Encoding.UTF8.GetBytes($"z{devicePersons.Count.ToString().PadLeft(5, '0')}"));
+                    await pipeWriter.WriteAsync(respBytes);
                 }
-                deviceProtocol = Convert.ToInt32(commandParams);
-                stream.Write(okCommand);
-            }
-            else if (commandId == 248)
-            {
-                // personcount
-                byte[] respBytes = deviceCommandHandler.CreateCommand(Encoding.UTF8.GetBytes($"z{devicePersons.Count.ToString().PadLeft(5, '0')}"));
-                stream.Write(respBytes);
-            }
-            else if (commandId == 249)
-            {
-                // logcount (total count | readCount)
-                byte[] respBytes = deviceCommandHandler.CreateCommand(Encoding.UTF8.GetBytes($"z{deviceAttendances.Count.ToString().PadLeft(10, '0')}{lastReadAttendanceRecord.ToString().PadLeft(10, '0')}"));
-                stream.Write(respBytes);
-            }
-            else if (commandId == 250 && commandParams == "DEL")
-            {
-                deviceAttendances.Clear();
-                lastReadAttendanceRecord = 0;
-                stream.Write(okCommand);
-            }
-            else if (commandId == 111)
-            {
-                if (deviceAttendances.Count > lastReadAttendanceRecord)
-                    lastReadAttendanceRecord++;
+                else if (commandId == 249)
+                {
+                    // logcount (total count | readCount)
+                    byte[] respBytes = deviceCommandHandler.CreateCommand(Encoding.UTF8.GetBytes($"z{deviceAttendances.Count.ToString().PadLeft(10, '0')}{lastReadAttendanceRecord.ToString().PadLeft(10, '0')}"));
+                    await pipeWriter.WriteAsync(respBytes);
+                }
+                else if (commandId == 250 && commandParams == "DEL")
+                {
+                    deviceAttendances.Clear();
+                    lastReadAttendanceRecord = 0;
+                    await pipeWriter.WriteAsync(okCommand);
+                }
+                else if (commandId == 111)
+                {
+                    if (deviceAttendances.Count > lastReadAttendanceRecord)
+                        lastReadAttendanceRecord++;
 
-                continue;
+                    continue;
+                }
+            }
+
+            pipeReader.AdvanceTo(pipeBuffer.Start, pipeBuffer.End);
+
+            if (result.IsCompleted)
+            {
+                break;
             }
         }
+        await pipeReader.CompleteAsync();
+        await pipeWriter.CompleteAsync();
     }
     catch (Exception ex)
     {
@@ -280,8 +289,24 @@ while (true)
         Console.WriteLine(ex.Message);
         Console.ResetColor();
     }
-    finally
-    {
-        ArrayPool<byte>.Shared.Return(buffer, clearArray: true);
-    }
+}
+
+
+
+static bool TryReadCommand(ref ReadOnlySequence<byte> buffer, out byte[]? command)
+{
+    command = null;
+
+    var start = buffer.PositionOf((byte)2);
+    if (!start.HasValue)
+        return false;
+
+    var end = buffer.Slice(start.Value).PositionOf((byte)3);
+    if (!end.HasValue)
+        return false;
+
+    command = buffer.Slice(start.Value, buffer.GetPosition(1, end.Value)).ToArray();
+
+    buffer = buffer.Slice(buffer.GetPosition(1, end.Value));
+    return true;
 }
