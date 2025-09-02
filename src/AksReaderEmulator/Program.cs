@@ -171,7 +171,7 @@ while (true)
                 else if (commandId == 21)
                 {
                     if (DateTime.TryParseExact(commandParams.Remove(6, 2), "HHmmssddMMyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime reqDate)
-                        && (reqDate.DayOfWeek == DayOfWeek.Sunday ? 7 : (int)reqDate.DayOfWeek) == Convert.ToInt32(commandParams[7]))
+                        && (reqDate.DayOfWeek == DayOfWeek.Sunday ? 7 : (int)reqDate.DayOfWeek) == Convert.ToInt32(commandParams[7].ToString()))
                     {
                         await pipeWriter.WriteAsync(okCommand);
                     }
