@@ -93,9 +93,11 @@ while (true)
         NetworkStream stream = client.GetStream();
 
         int i;
+        int readPosition = 0;
 
-        while ((i = stream.Read(buffer)) != 0)
+        while ((i = stream.Read(buffer, readPosition, buffer.Length-readPosition)) != 0)
         {
+            readPosition += i;
             byte[]? dataPart = deviceCommandHandler.GetDataPart(buffer);
             if (dataPart == null) continue;
 
@@ -103,6 +105,7 @@ while (true)
             string commandParams = Encoding.UTF8.GetString(dataPart[1..]);
 
             Array.Clear(buffer);
+            readPosition = 0;
 
             if (withRequestCommandLogging)
                 Console.WriteLine($"{commandId} {commandParams}");
