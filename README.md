@@ -1,4 +1,4 @@
-# AKS Reader Emulator ![Build](https://github.com/cancakar35/AksReaderEmulator/actions/workflows/ci.yml/badge.svg)
+# AKS Reader Emulator ![Build](https://github.com/cancakar35/AksReaderEmulator/actions/workflows/ci.yml/badge.svg) [![Latest Release](https://img.shields.io/github/v/release/cancakar35/AksReaderEmulator?logo=github&label=Version)](https://github.com/cancakar35/AksReaderEmulator/releases)
 
 Simulate AKS Elektronik mifare and proximity access control devices (ACS-403, ACS-451, ACS-503, ACS-551, ACS-552 etc.) for tests.
 
