@@ -106,6 +106,7 @@ while (true)
 
                 int commandId = dataPart[0];
                 string commandParams = Encoding.UTF8.GetString(dataPart[1..]);
+
                 if (withRequestCommandLogging)
                     Console.WriteLine($"{commandId} {commandParams}");
 
@@ -258,11 +259,18 @@ while (true)
                     byte[] respBytes = deviceCommandHandler.CreateCommand(Encoding.UTF8.GetBytes($"z{deviceAttendances.Count.ToString().PadLeft(10, '0')}{lastReadAttendanceRecord.ToString().PadLeft(10, '0')}"));
                     await pipeWriter.WriteAsync(respBytes);
                 }
-                else if (commandId == 250 && commandParams == "DEL")
+                else if (commandId == 250)
                 {
-                    deviceAttendances.Clear();
-                    lastReadAttendanceRecord = 0;
-                    await pipeWriter.WriteAsync(okCommand);
+                    if (commandParams == "DEL")
+                    {
+                        deviceAttendances.Clear();
+                        lastReadAttendanceRecord = 0;
+                        await pipeWriter.WriteAsync(okCommand);
+                    }
+                    else
+                    {
+                        await pipeWriter.WriteAsync(errCommand);
+                    }
                 }
                 else if (commandId == 111)
                 {
