@@ -8,7 +8,7 @@
         "AKSREADER_port": "1001",
         "AKSREADER_readerId": "150",
         "AKSREADER_randomCardReads": "true",
-        "AKSREADER_logRequests": "false",
+        "AKSREADER_logRequests": "true",
         "AKSREADER_workType": "3",
         "AKSREADER_protocol": "0"
       }

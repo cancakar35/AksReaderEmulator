@@ -38,6 +38,8 @@ namespace AksReaderEmulator
             if (endIndex == -1) return null;
 
             int dataLength = (int)remainingBuffer[2];
+            if (dataLength < 3)
+                return null;
 
             return remainingBuffer.Slice(3, dataLength - 3).ToArray();
         }
