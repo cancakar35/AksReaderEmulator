@@ -31,9 +31,16 @@ namespace AksReaderEmulator
         }
         public byte[]? GetDataPart(ReadOnlySpan<byte> buffer)
         {
+            if (buffer.Length < 4) return null;
+
             int startIndex = buffer.IndexOf((byte)2);
             if (startIndex == -1) return null;
             var remainingBuffer = buffer[(startIndex + 1)..];
+
+            // fix for AKS 3.0.dll users (double start and end bytes issue)
+            if (remainingBuffer[0] == (byte)2)
+                remainingBuffer = remainingBuffer[1..];
+
             int endIndex = remainingBuffer.IndexOf((byte)3);
             if (endIndex == -1) return null;
 
