@@ -228,7 +228,7 @@ while (true)
                 || commandId == 58 || commandId == 59 || commandId == 62 || commandId == 63
                 || commandId == 70 || commandId == 71)
             {
-                Console.ForegroundColor = ConsoleColor.DarkYellow;
+                Console.ForegroundColor = ConsoleColor.DarkRed;
                 Console.WriteLine("Mifare card operations not supported yet. Use a real device.");
                 Console.ResetColor();
                 stream.Write(errCommand);
