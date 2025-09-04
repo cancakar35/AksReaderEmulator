@@ -2,6 +2,9 @@
 
 Simulate AKS Elektronik mifare and proximity access control devices (ACS-403, ACS-451, ACS-503, ACS-551, ACS-552 etc.) for tests.
 
+* [Quick Start](#quick-start)
+* [Using with Docker](#using-with-docker)
+
 ## Quick Start
 
 - Download the latest version from the [Releases](https://github.com/cancakar35/AksReaderEmulator/releases) section.
@@ -42,6 +45,11 @@ Simulate AKS Elektronik mifare and proximity access control devices (ACS-403, AC
 
 ## Using with Docker
 
-- Clone the repository.
-- Build container using Dockerfile provided in the project directory.
-  
+```bash
+docker run --name aksemulator -p 1001:1001 ghcr.io/cancakar35/aks-reader-emulator:latest
+```
+
+Use -e to set environment variables. Example: AKSREADER_logRequests=true.
+
+> [!WARNING]  
+> If you change the port using --port or AKSREADER_port, you need to expose that port.
