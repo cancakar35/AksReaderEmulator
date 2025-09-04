@@ -115,6 +115,7 @@ jobs:
       uses: docker/build-push-action@v6
       with:
         push: true
+        context: ./
         file: ./src/AksReaderEmulator/Dockerfile
         tags: |
             ghcr.io/cancakar35/aks-reader-emulator:${{ env.VERSION_PREFIX }}
