@@ -55,5 +55,16 @@ namespace AksReaderEmulator
             byte xorBytes = XORBytes(bytes);
             return xorBytes.ToString("X2", CultureInfo.InvariantCulture);
         }
+
+        public bool ValidateCommand(ReadOnlySpan<byte> buffer)
+        {
+            if (buffer.Length < 7)
+                return false;
+
+            string calcBcc = CreateBcc(buffer[..^3]);
+            string receivedBcc = $"{(char)buffer[^3]}{(char)buffer[^2]}";
+
+            return calcBcc == receivedBcc;
+        }
     }
 }
