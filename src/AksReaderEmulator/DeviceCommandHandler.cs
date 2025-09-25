@@ -61,6 +61,11 @@ namespace AksReaderEmulator
             if (buffer.Length < 7)
                 return false;
 
+            if (buffer[0] == 2 && buffer[1] == 2) // fix for AKS 3.0.dll
+            {
+                buffer = buffer[1..];
+            }
+
             string calcBcc = CreateBcc(buffer[..^3]);
             string receivedBcc = $"{(char)buffer[^3]}{(char)buffer[^2]}";
 
