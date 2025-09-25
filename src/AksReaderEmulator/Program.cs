@@ -101,6 +101,16 @@ while (true)
 
             while (TryReadCommand(ref pipeBuffer, out byte[]? command))
             {
+                if (command == null)
+                    continue;
+
+                if (!deviceCommandHandler.ValidateCommand(command))
+                {
+                    Console.ForegroundColor = ConsoleColor.DarkYellow;
+                    Console.WriteLine("Invalid request. Check message length or bcc");
+                    Console.ResetColor();
+                    continue;
+                }
                 byte[]? dataPart = deviceCommandHandler.GetDataPart(command);
                 if (dataPart == null) continue;
 
