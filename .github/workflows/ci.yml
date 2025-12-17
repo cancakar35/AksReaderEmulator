@@ -10,11 +10,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
     - name: Setup .NET
-      uses: actions/setup-dotnet@v4
+      uses: actions/setup-dotnet@v5
       with:
-        dotnet-version: 9.0.x
+        dotnet-version: 10.0.x
     - name: Install Necessary tools for Aot
       run: sudo apt-get install clang zlib1g-dev
       
@@ -25,7 +25,7 @@ jobs:
       run: |
         zip -j ./artifacts/AksReaderEmulator-linux-x64.zip ./artifacts/linux-x64/AksReaderEmulator
 
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v6
       with:
         name: linux-x64
         path: ./artifacts/AksReaderEmulator-linux-x64.zip
@@ -36,11 +36,11 @@ jobs:
     runs-on: windows-latest
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
     - name: Setup .NET
-      uses: actions/setup-dotnet@v4
+      uses: actions/setup-dotnet@v5
       with:
-        dotnet-version: 9.0.x
+        dotnet-version: 10.0.x
     - name: Publish
       run: dotnet publish ./src/AksReaderEmulator/AksReaderEmulator.csproj -c Release -r win-x64 -o ./artifacts/win-x64 --sc -p:PublishAot=true -p:PublishSingleFile=true -p:DebugType=none -p:ContinuousIntegrationBuild=true
 
@@ -49,7 +49,7 @@ jobs:
       run: |
         Compress-Archive -Path ./artifacts/win-x64/AksReaderEmulator.exe -DestinationPath ./artifacts/AksReaderEmulator-win-x64.zip
 
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v6
       with:
         name: win-x64
         path: ./artifacts/AksReaderEmulator-win-x64.zip
@@ -60,11 +60,11 @@ jobs:
     runs-on: macos-latest
     
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
     - name: Setup .NET
-      uses: actions/setup-dotnet@v4
+      uses: actions/setup-dotnet@v5
       with:
-        dotnet-version: 9.0.x
+        dotnet-version: 10.0.x
     - name: Publish
       run: dotnet publish ./src/AksReaderEmulator/AksReaderEmulator.csproj -c Release -r osx-arm64 -o ./artifacts/osx-arm64 --sc -p:PublishAot=true -p:PublishSingleFile=true -p:DebugType=none -p:ContinuousIntegrationBuild=true
 
@@ -72,7 +72,7 @@ jobs:
       run: |
         zip -j ./artifacts/AksReaderEmulator-osx-arm64.zip ./artifacts/osx-arm64/AksReaderEmulator
 
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v6
       with:
         name: osx-arm64
         path: ./artifacts/AksReaderEmulator-osx-arm64.zip
@@ -87,7 +87,7 @@ jobs:
       packages: write
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
 
     - name: Read VersionPrefix
       id: read_version
@@ -124,7 +124,7 @@ jobs:
     
   
     - name: Download artifacts
-      uses: actions/download-artifact@v5
+      uses: actions/download-artifact@v7
       with:
         path: ./artifacts
 

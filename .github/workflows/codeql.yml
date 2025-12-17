@@ -19,7 +19,7 @@ jobs:
    
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
       with:
         fetch-depth: 0
         
@@ -29,9 +29,9 @@ jobs:
         languages: 'csharp'
 
     - name: Setup .NET
-      uses: actions/setup-dotnet@v4
+      uses: actions/setup-dotnet@v5
       with:
-        dotnet-version: 9.0.x
+        dotnet-version: 10.0.x
 
     - name: Run build
       run: dotnet build --configuration Release
