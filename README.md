@@ -4,6 +4,7 @@ Simulate AKS Elektronik mifare and proximity access control devices (ACS-403, AC
 
 * [Quick Start](#quick-start)
 * [Using with Docker](#using-with-docker)
+* [Testing over Serial Port](#testing-over-serialport)
 
 ## Quick Start
 
@@ -53,3 +54,8 @@ Use -e to set environment variables. Example: AKSREADER_logRequests=true.
 
 > [!WARNING]  
 > If you change the port using --port or AKSREADER_port, you need to expose that port.
+
+
+## Testing over SerialPort
+ 
+It is possible to bind emulator to COM port using Tibbo VSP Manager or any other virtual serial port tools.
